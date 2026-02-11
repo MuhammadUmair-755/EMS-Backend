@@ -1,63 +1,18 @@
-const Employee = require("../models/Employee");
-const EmployeeLog = require("../models/Logs");
+const prisma = require("../config/prisma"); 
 const bcrypt = require("bcryptjs");
 
 class EmployeeService {
   async createEmployee(employeeData, adminId) {
-    const { fullName, email, cnic, currentSalary, dob, password } =
-      employeeData;
+    const { fullName, email, cnic, currentSalary, dob, password, departmentId } = employeeData;
 
     if (!fullName || !email || !cnic || !currentSalary || !password) {
-      throw new Error(
-        "Missing required fields: fullName, email, cnic, password and currentSalary are mandatory.",
-      );
+      throw new Error("Missing required fields.");
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      throw new Error("Invalid email format.");
-    }
-
-    const cnicRegex = /^\d{5}-\d{7}-\d{1}$/;
-    if (!cnicRegex.test(cnic)) {
-      throw new Error("Invalid CNIC format. Expected: 00000-0000000-0");
-    }
-
-    if (isNaN(currentSalary) || currentSalary <= 0) {
-      throw new Error("Current salary must be a positive number.");
-    }
-
-    if (dob) {
-      const birthDate = new Date(dob);
-      const today = new Date();
-
-      if (isNaN(birthDate.getTime())) {
-        throw new Error("Invalid Date of Birth format.");
-      }
-
-      if (birthDate >= today) {
-        throw new Error("Date of Birth cannot be today or in the future.");
-      }
-
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const monthDiff = today.getMonth() - birthDate.getMonth();
-
-      if (
-        monthDiff < 0 ||
-        (monthDiff === 0 && today.getDate() < birthDate.getDate())
-      ) {
-        age--;
-      }
-
-      if (age < 18) {
-        throw new Error("Employee must be at least 18 years old.");
-      }
-    } else {
-      throw new Error("Date of Birth is required.");
-    }
-
-    const existingEmployee = await Employee.findOne({
-      $or: [{ email }, { cnic }],
+    const existingEmployee = await prisma.employee.findFirst({
+      where: {
+        OR: [{ email }, { cnic }],
+      },
     });
 
     if (existingEmployee) {
@@ -67,157 +22,107 @@ class EmployeeService {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const finalData = {
-      ...employeeData,
-      password: hashedPassword,
-      joiningDate: employeeData.joiningDate || new Date(),
-    };
+    return await prisma.$transaction(async (tx) => {
+      const employee = await tx.employee.create({
+        data: {
+          fullName,
+          email,
+          cnic,
+          currentSalary: parseFloat(currentSalary),
+          dob: new Date(dob),
+          password: hashedPassword,
+          jobTitle: employeeData.jobTitle,
+          role: employeeData.role || 'employee',
+          joiningDate: employeeData.joiningDate ? new Date(employeeData.joiningDate) : new Date(),
+          departmentId: departmentId || null, 
+        },
+      });
 
-    const employee = await Employee.create(finalData);
+      await tx.employeeLog.create({
+        data: {
+          employeeId: employee.id,
+          eventType: "Manual_Note", // Matches the Enum in your Prisma schema
+          newValue: "Employee profile created",
+          adminUserId: adminId,
+        },
+      });
 
-    await EmployeeLog.create({
-      employeeId: employee._id,
-      eventType: "Manual Note",
-      newValue: "Employee profile created",
-      adminUser: adminId,
+      return employee;
     });
-
-    return employee;
   }
 
-  async getEmployees(query = {}) {
-    const employees = await Employee.find(query)
-    .populate("department", "name")
-    .select("-password")
-    .sort({ createdAt: -1 });
-    return employees;
-    // return await Employee.find().populate("deptHead", "fullname");
+  async getEmployees(filters = {}) {
+    return await prisma.employee.findMany({
+      where: filters,
+      include: {
+        department: { select: { name: true } } // Replaces .populate()
+      },
+      orderBy: { createdAt: 'desc' }
+    });
   }
 
   async getEmployeeById(id) {
-    if (!id) throw new Error("Invalid Id");
-    const employee = await Employee.findById(id);
-    if (!employee) {
-      throw new Error("Employee not found");
-    }
+    const employee = await prisma.employee.findUnique({
+      where: { id },
+      include: { department: true }
+    });
+    if (!employee) throw new Error("Employee not found");
     return employee;
   }
 
   async updateEmployee(id, updateData, adminId) {
-    if (!id) throw new Error("Invalid Id");
-    const { email, cnic, currentSalary, dob } = updateData;
+    const oldData = await this.getEmployeeById(id);
 
-    if (email) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) throw new Error("Invalid email format.");
-
-      const existing = await Employee.findOne({ email, _id: { $ne: id } });
-      if (existing)
-        throw new Error("Email is already in use by another employee.");
-    }
-
-    if (cnic) {
-      const cnicRegex = /^\d{5}-\d{7}-\d{1}$/;
-      if (!cnicRegex.test(cnic)) throw new Error("Invalid CNIC format.");
-
-      const existing = await Employee.findOne({ cnic, _id: { $ne: id } });
-      if (existing)
-        throw new Error("CNIC is already in use by another employee.");
-    }
-
-    if (currentSalary !== undefined) {
-      if (isNaN(currentSalary) || currentSalary < 0) {
-        throw new Error("Salary must be a positive number.");
+    const updatedEmployee = await prisma.employee.update({
+      where: { id },
+      data: {
+        ...updateData,       
+        dob: updateData.dob ? new Date(updateData.dob) : undefined,
+        currentSalary: updateData.currentSalary ? parseFloat(updateData.currentSalary) : undefined,
       }
-    }
-
-    if (dob) {
-      const birthDate = new Date(dob);
-      if (isNaN(birthDate.getTime()) || birthDate >= new Date()) {
-        throw new Error("Invalid Date of Birth.");
+    });
+    
+    const logs = [];
+    const fieldsToLog = ['currentSalary', 'departmentId', 'jobTitle', 'status'];
+    
+    fieldsToLog.forEach(field => {
+      if (updateData[field] && oldData[field] !== updateData[field]) {
+        logs.push({
+          employeeId: id,
+          eventType: this._mapFieldToEventType(field),
+          oldValue: oldData[field]?.toString(),
+          newValue: updateData[field]?.toString(),
+          adminUserId: adminId
+        });
       }
-    }
-
-    const oldData = await Employee.findById(id);
-    if (!oldData) throw new Error("Employee not found");
-
-    const updatedEmployee = await Employee.findByIdAndUpdate(id, updateData, {
-      new: true,
     });
 
-    if (
-      updateData.currentSalary &&
-      oldData.currentSalary !== updateData.currentSalary
-    ) {
-      await EmployeeLog.create({
-        employeeId: id,
-        eventType: "Salary Increment",
-        oldValue: oldData.currentSalary.toString(),
-        newValue: updateData.currentSalary.toString(),
-        adminUser: adminId,
-      });
-    }
-
-    if (updateData.department && oldData.department !== updateData.department) {
-      await EmployeeLog.create({
-        employeeId: id,
-        eventType: "Department Change",
-        oldValue: oldData.department,
-        newValue: updateData.department,
-        adminUser: adminId,
-      });
-    }
-    if (updateData.jobTitle && oldData.jobTitle !== updateData.jobTitle) {
-      console.log(oldData.jobTitle, updateData.jobTitle);
-      await EmployeeLog.create({
-        employeeId: id,
-        eventType: "Job Title Change",
-        oldValue: oldData.jobTitle,
-        newValue: updateData.jobTitle,
-        adminUser: adminId,
-      });
-    }
-
-    if (updateData.status && oldData.status !== updateData.status) {
-      await EmployeeLog.create({
-        employeeId: id,
-        eventType: "Status Change",
-        oldValue: oldData.status,
-        newValue: updateData.status,
-        adminUser: adminId,
-      });
-    }
-    if (updateData.notes && oldData.notes !== updateData.notes) {
-      await EmployeeLog.create({
-        employeeId: id,
-        eventType: "Manual Note",
-        oldValue: oldData.notes,
-        newValue: updateData.status,
-        adminUser: adminId,
-      });
+    if (logs.length > 0) {
+      await prisma.employeeLog.createMany({ data: logs });
     }
 
     return updatedEmployee;
   }
 
+  _mapFieldToEventType(field) {
+    const maps = {
+      currentSalary: "Salary_Increment",
+      departmentId: "Department_Change",
+      jobTitle: "Job_Title_Change",
+      status: "Status_Change"
+    };
+    return maps[field] || "Manual_Note";
+  }
+
   async deleteEmployee(id) {
-    if (!id) throw new Error("Invalid Id");
-    return await Employee.findByIdAndDelete(id);
+    return await prisma.employee.delete({ where: { id } });
   }
 
   async getEmployeeHistory(id) {
-    if (!id) {
-      throw new Error("Invalid Id");
-    }
-    const employee = await this.getEmployeeById(id);
-    if (!employee) {
-      throw new Error("Employee not found with id");
-    }
-    const logs = await EmployeeLog.find({ employeeId: id }).sort({
-      createdAt: -1,
+    return await prisma.employeeLog.findMany({
+      where: { employeeId: id },
+      orderBy: { date: 'desc' }
     });
-
-    return logs;
   }
 }
 

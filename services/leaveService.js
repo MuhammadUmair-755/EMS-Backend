@@ -1,14 +1,15 @@
-const Leave = require("../models/Leaves.js");
+const prisma = require("../config/prisma");
 
 class LeaveService {
   async createLeaveRequest(leaveData) {
-    const { startDate, endDate, leaveType } = leaveData;
+    const { startDate, endDate, leaveType, employeeId, reason } = leaveData;
 
     const start = new Date(startDate);
     const end = new Date(endDate);
     const today = new Date();
-    today.setHours(0, 0, 0, 0); 
+    today.setHours(0, 0, 0, 0);
 
+    // 1. Date Validations
     if (start < today) {
       throw new Error("Start date cannot be in the past.");
     }
@@ -17,43 +18,109 @@ class LeaveService {
       throw new Error("End date cannot be before the start date.");
     }
 
-    const existingLeave = await Leave.findOne({
-      employeeId: leaveData.employeeId,
-      status: { $ne: "Rejected" },
-      $or: [
-        { startDate: { $lte: end }, endDate: { $gte: start } }
-      ]
+    const existingLeave = await prisma.leave.findFirst({
+      where: {
+        employeeId: employeeId,
+        status: { not: "REJECTED" },
+        AND: [{ startDate: { lte: end } }, { endDate: { gte: start } }],
+      },
     });
 
     if (existingLeave) {
       throw new Error("You already have a leave request for these dates.");
     }
 
-    return await Leave.create(leaveData);
+    // 3. Create Leave
+    return await prisma.leave.create({
+      data: {
+        employeeId,
+        startDate: start,
+        endDate: end,
+        leaveType: leaveType.toUpperCase(), 
+        reason,
+        status: "PENDING",
+      },
+    });
   }
 
   async updateLeaveStatus(leaveId, status) {
-    
-    if (!["Approved", "Rejected"].includes(status)) {
+    // Validating against expected Enum strings
+    const upperStatus = status.toUpperCase();
+    if (!["APPROVED", "REJECTED"].includes(upperStatus)) {
       throw new Error("Invalid status update.");
     }
 
-    const leave = await Leave.findByIdAndUpdate(
-      leaveId,
-      { status },
-      { new: true, runValidators: true }
-    );
-
-    if (!leave) throw new Error("Leave request not found.");
-    return leave;
+    try {
+      const leave = await prisma.leave.update({
+        where: { id: leaveId },
+        data: { status: upperStatus },
+      });
+      return leave;
+    } catch (error) {
+      if (error.code === "P2025") throw new Error("Leave request not found.");
+      throw error;
+    }
   }
 
   async getEmployeeLeaves(employeeId) {
-    return await Leave.find({ employeeId }).sort({ createdAt: -1 });
+    return await prisma.leave.findMany({
+      where: { employeeId },
+      orderBy: { createdAt: "desc" },
+    });
   }
 
   async getAllLeaves() {
-    return await Leave.find().populate("employeeId", "fullName department").sort({ createdAt: -1 });
+    return await prisma.leave.findMany({
+      include: {
+        employee: {
+          select: {
+            fullName: true,
+            department: { select: { name: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  async getDepartmentLeavesByMonth(departmentId) {
+    const now = new Date();
+
+    const startOfMonth = new Date(
+      Date.UTC(now.getFullYear(), now.getMonth(), 1, 0, 0, 0),
+    );
+    const endOfMonth = new Date(
+      Date.UTC(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59),
+    );
+
+    const leaves =  await prisma.leave.findMany({
+      where: {
+        employee: {
+          departmentId: departmentId,
+        },
+        
+        // AND: [
+        //   {
+        //     startDate: { lte: endOfMonth },
+        //   },
+        //   {
+        //     endDate: { gte: startOfMonth },
+        //   },
+        // ],
+      },
+      include: {
+        employee: {
+          select: {
+            fullName: true,
+            jobTitle: true,
+          },
+        },
+      },
+      orderBy: {
+        startDate: "asc",
+      },
+    });
+    return leaves;
   }
 }
 

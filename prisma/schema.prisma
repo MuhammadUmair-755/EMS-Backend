@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Department {
+  id          String     @id @default(uuid())
+  name        String     @unique
+  description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  deptHeadId  String?    @unique
+  deptHead    Employee?  @relation("DepartmentHead", fields: [deptHeadId], references: [id])
+  employees   Employee[] @relation("EmployeeToDepartment")
+}
+
+model Employee {
+  id               String         @id @default(uuid())
+  fullName         String
+  cnic             String         @unique
+  dob              DateTime
+  joiningDate      DateTime
+  currentSalary    Float
+  jobTitle         String
+  status           EmployeeStatus @default(ACTIVE)
+  phone            String?
+  email            String         @unique
+  password         String
+  role             Role           @default(EMPLOYEE)
+  address          String?
+  emergencyContact String?
+  notes            String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  departmentId     String?
+  headedDepartment Department?    @relation("DepartmentHead")
+  department       Department?    @relation("EmployeeToDepartment", fields: [departmentId], references: [id])
+  performedLogs    EmployeeLog[]  @relation("AdminWhoLogged")
+  logs             EmployeeLog[]  @relation("LogsForEmployee")
+  leaves           Leave[]
+}
+
+model Leave {
+  id         String      @id @default(uuid())
+  employeeId String
+  leaveType  LeaveType
+  startDate  DateTime
+  endDate    DateTime
+  reason     String?
+  status     LeaveStatus @default(PENDING)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  employee   Employee    @relation(fields: [employeeId], references: [id])
+}
+
+model EmployeeLog {
+  id          String       @id @default(uuid())
+  employeeId  String
+  eventType   LogEventType
+  oldValue    String?
+  newValue    String?
+  adminUserId String
+  date        DateTime     @default(now())
+  adminUser   Employee     @relation("AdminWhoLogged", fields: [adminUserId], references: [id])
+  employee    Employee     @relation("LogsForEmployee", fields: [employeeId], references: [id])
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  RESIGNED
+  TERMINATED
+}
+
+enum Role {
+  ADMIN
+  EMPLOYEE
+}
+
+enum LeaveType {
+  CASUAL
+  SICK
+  ANNUAL
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum LogEventType {
+  Salary_Increment  @map("Salary Increment")
+  Department_Change @map("Department Change")
+  Job_Title_Change  @map("Job Title Change")
+  Status_Change     @map("Status Change")
+  Manual_Note       @map("Manual Note")
+}

@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const Employee = require('../models/Employee'); 
+const prisma = require('../config/prisma');
 
 const protect = async (req, res, next) => {
   let token;
@@ -9,7 +9,16 @@ const protect = async (req, res, next) => {
       token = req.headers.authorization.split(' ')[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      req.user = await Employee.findById(decoded.id).select('-password');
+      req.user = await prisma.employee.findUnique({
+        where: { id: decoded.id },
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          role: true,
+          departmentId: true
+        }
+      });
 
       if (!req.user) {
         return res.status(401).json({ message: 'User no longer exists' });
@@ -27,7 +36,7 @@ const protect = async (req, res, next) => {
 };
 
 const adminOnly = (req, res, next) => {
-  if (req.user && req.user.role === 'admin') {
+  if (req.user && req.user.role === 'ADMIN') {
     next(); 
   } else {
     return res.status(403).json({

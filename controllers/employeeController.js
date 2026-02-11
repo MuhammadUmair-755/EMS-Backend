@@ -1,11 +1,10 @@
-const Employee = require("../models/Employee");
 const employeeService = require("../services/employeeService");
 
 exports.createEmployee = async (req, res) => {
   try {
     const employee = await employeeService.createEmployee(
       req.body,
-      req.user._id,
+      req.user.id,
     );
     res.status(201).json({ success: true, data: employee });
   } catch (error) {
@@ -15,10 +14,10 @@ exports.createEmployee = async (req, res) => {
 
 exports.getEmployees = async (req, res) => {
   try {
-    const { department } = req.query;
+    const { departmentId } = req.query;
     query = {};
-    if (department) {
-      query.department = department;
+    if (departmentId) {
+      query.departmentId = departmentId;
     }
     const employees = await employeeService.getEmployees(query);
     res.status(200).json({ success: true, data: employees });
@@ -42,7 +41,7 @@ exports.updateEmployee = async (req, res) => {
     const employee = await employeeService.updateEmployee(
       req.params.id,
       req.body,
-      req.user._id,
+      req.user.id,
     );
     res.status(200).json({ success: true, data: employee });
   } catch (error) {

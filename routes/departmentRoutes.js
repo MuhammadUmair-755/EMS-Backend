@@ -11,9 +11,9 @@ const { protect, adminOnly } = require("../middleware/authMiddleware");
 
 router
   .route("/")
-  .post(protect, adminOnly, createDepartment)
-  .get(protect, adminOnly, getAllDepartments);
+  .get(protect, adminOnly, getAllDepartments)
+  .post(protect, adminOnly, createDepartment);
 
-router.route("/:deptId/head").patch(protect, adminOnly, setDepartmentHead);
+router.route("/:deptId/head").put(protect, adminOnly, setDepartmentHead);
 
 module.exports = router;
