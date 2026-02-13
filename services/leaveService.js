@@ -9,6 +9,14 @@ class LeaveService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    const employee = await prisma.employee.findUnique({
+      where: { id: employeeId },
+    });
+
+    if (!employee) {
+      throw new Error("Employee not found with Id");
+    }
+
     // 1. Date Validations
     if (start < today) {
       throw new Error("Start date cannot be in the past.");
@@ -36,7 +44,7 @@ class LeaveService {
         employeeId,
         startDate: start,
         endDate: end,
-        leaveType: leaveType.toUpperCase(), 
+        leaveType: leaveType.toUpperCase(),
         reason,
         status: "PENDING",
       },
@@ -93,12 +101,12 @@ class LeaveService {
       Date.UTC(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59),
     );
 
-    const leaves =  await prisma.leave.findMany({
+    const leaves = await prisma.leave.findMany({
       where: {
         employee: {
           departmentId: departmentId,
         },
-        
+
         // AND: [
         //   {
         //     startDate: { lte: endOfMonth },
