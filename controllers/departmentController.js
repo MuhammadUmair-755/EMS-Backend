@@ -58,3 +58,41 @@ exports.getAllDepartments = async (req, res) => {
     });
   }
 };
+
+exports.updateDepartment = async (req, res) => {
+  try {
+    const { id } = req.params; 
+    const updateData = req.body; 
+
+    if (!updateData || Object.keys(updateData).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No update data provided.",
+      });
+    }
+
+    const updatedDept = await departmentService.updateDepartment(id, updateData);
+
+    return res.status(200).json({
+      success: true,
+      message: "Department updated successfully",
+      data: updatedDept,
+    });
+    
+  } catch (error) {
+    if (error.message === "Department not found.") {
+      return res.status(404).json({ success: false, message: error.message });
+    }
+
+    if (error.message.includes("does not exist") || error.message.includes("already heading")) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
+
+    // 5. Generic Server Error
+    console.error("Update Department Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error occurred while updating department.",
+    });
+  }
+};

@@ -15,16 +15,34 @@ class EmployeeService {
       role,
     } = employeeData;
 
-    if (!fullName || !email || !cnic || !currentSalary || !password) {
+    if (
+      !fullName ||
+      !email ||
+      !cnic ||
+      !currentSalary ||
+      !password ||
+      !dob ||
+      !departmentId
+    ) {
       throw new Error("Missing required fields.");
     }
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email)) {
+      throw new Error("Please provide a valid email address.");
+    }
 
+    const cnicRegex = /^\d{5}-\d{7}-\d{1}$/;
+
+    if (!cnicRegex.test(cnic)) {
+      throw new Error("CNIC must be exactly 13 digits without dashes.");
+    }
     const existingEmployee = await prisma.employee.findFirst({
       where: {
         OR: [{ email }, { cnic }],
       },
     });
-    const normalizedRole = role?.toUpperCase() === "ADMIN" ? Role.ADMIN : Role.EMPLOYEE;
+    const normalizedRole =
+      role?.toUpperCase() === "ADMIN" ? Role.ADMIN : Role.EMPLOYEE;
 
     if (existingEmployee) {
       throw new Error("An employee with this Email or CNIC already exists.");

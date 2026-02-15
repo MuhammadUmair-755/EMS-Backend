@@ -72,6 +72,46 @@ class DepartmentService {
       }
     });
   }
+
+  async updateDepartment(deptId, updateData) {
+  if (!deptId) {
+    throw new Error("Department ID is required for update.");
+  }
+
+  // Destructure to ensure we only process the fields we allow
+  const { name, description, deptHeadId } = updateData;
+
+  try {
+    const updatedDepartment = await prisma.department.update({
+      where: { id: deptId },
+      data: {
+        name: name !== undefined ? name : undefined,
+        description: description !== undefined ? description : undefined,
+        deptHeadId: deptHeadId !== undefined ? deptHeadId : undefined,
+      },
+      include: {
+        deptHead: {
+          select: {
+            fullName: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    return updatedDepartment;
+  } catch (error) {
+    // P2025 is Prisma's error for "Record to update not found."
+    if (error.code === 'P2025') {
+      throw new Error("Department not found.");
+    }
+    // P2003 is a Foreign Key constraint error (e.g., employeeId doesn't exist)
+    if (error.code === 'P2003') {
+      throw new Error("The selected Department Head (Employee ID) does not exist.");
+    }
+    throw error;
+  }
+}
 }
 
 module.exports = new DepartmentService();
