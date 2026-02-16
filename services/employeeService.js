@@ -34,7 +34,7 @@ class EmployeeService {
     const cnicRegex = /^\d{5}-\d{7}-\d{1}$/;
 
     if (!cnicRegex.test(cnic)) {
-      throw new Error("CNIC must be exactly 13 digits without dashes.");
+      throw new Error("CNIC must be exactly 13 digits with dashes.");
     }
     const existingEmployee = await prisma.employee.findFirst({
       where: {

@@ -52,7 +52,7 @@ class LeaveService {
   }
 
   async updateLeaveStatus(leaveId, status) {
-    // Validating against expected Enum strings
+     Validating against expected// Enum strings
     const upperStatus = status.toUpperCase();
     if (!["APPROVED", "REJECTED"].includes(upperStatus)) {
       throw new Error("Invalid status update.");
