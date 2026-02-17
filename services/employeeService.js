@@ -1,6 +1,7 @@
 const { Role, EmployeeStatus } = require("@prisma/client");
 const prisma = require("../config/prisma");
 const bcrypt = require("bcryptjs");
+const { validateEmployeeDates } = require("../utils/helpers/dateValidation");
 
 class EmployeeService {
   async createEmployee(employeeData, adminId) {
@@ -17,8 +18,8 @@ class EmployeeService {
       address,
       emergencyContact,
       notes,
+      joiningDate
     } = employeeData;
-
     if (
       !fullName ||
       !email ||
@@ -26,10 +27,12 @@ class EmployeeService {
       !currentSalary ||
       !password ||
       !dob ||
-      !departmentId
+      !departmentId ||
+      !joiningDate
     ) {
       throw new Error("Missing required fields.");
     }
+    validateEmployeeDates(dob);
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(email)) {
       throw new Error("Please provide a valid email address.");
@@ -116,14 +119,15 @@ class EmployeeService {
 
   async updateEmployee(id, updateData, adminId) {
     const oldData = await this.getEmployeeById(id);
-
+    validateEmployeeDates(updateData.dob);
     const updatedEmployee = await prisma.employee.update({
       where: { id },
       data: {
         ...updateData,
-        dob: updateData.dob ? new Date(updateData.dob) : undefined,
-        currentSalary: updateData.currentSalary
-          ? parseFloat(updateData.currentSalary)
+        dob: updateData?.dob ? new Date(updateData?.dob) : undefined,
+        joiningDate: updateData?.joiningDate ? new Date(updateData?.joiningDate) : undefined,
+        currentSalary: updateData?.currentSalary
+          ? updateData?.currentSalary
           : undefined,
       },
     });
