@@ -13,6 +13,10 @@ class EmployeeService {
       password,
       departmentId,
       role,
+      phone,
+      address,
+      emergencyContact,
+      notes,
     } = employeeData;
 
     if (
@@ -71,6 +75,10 @@ class EmployeeService {
             ? new Date(employeeData.joiningDate)
             : new Date(),
           departmentId: departmentId,
+          phone: phone,
+          emergencyContact: emergencyContact,
+          address: address,
+          notes: notes,
         },
       });
 
