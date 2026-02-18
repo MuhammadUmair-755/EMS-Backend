@@ -59,19 +59,26 @@ class DepartmentService {
     }
   }
 
-  async getAllDepartments() {
-    
-    return await prisma.department.findMany({
+  async getAllDepartments(departmentId = null) {
+  // If an ID is provided, fetch just one
+  if (departmentId) {
+    return await prisma.department.findUnique({
+      where: { id: departmentId },
       include: {
-        _count: {
-          select: { employees: true } 
-        },
-        deptHead: {
-          select: { fullName: true }
-        }
+        _count: { select: { employees: true } },
+        deptHead: { select: { fullName: true } }
       }
     });
   }
+
+  // Otherwise, fetch all (your existing logic)
+  return await prisma.department.findMany({
+    include: {
+      _count: { select: { employees: true } },
+      deptHead: { select: { fullName: true } }
+    }
+  });
+}
 
   async updateDepartment(deptId, updateData) {
   if (!deptId) {

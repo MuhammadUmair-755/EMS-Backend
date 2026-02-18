@@ -45,11 +45,21 @@ exports.setDepartmentHead = async (req, res) => {
 
 exports.getAllDepartments = async (req, res) => {
   try {
-    const departments = await departmentService.getAllDepartments();
+    const { departmentId } = req.query; // Extract from URL query string
+    const result = await departmentService.getAllDepartments(departmentId);
+
+    if (departmentId && !result) {
+      return res.status(404).json({
+        success: false,
+        message: "Department not found",
+      });
+    }
+
     res.status(200).json({
       success: true,
-      count: departments.length,
-      data: departments,
+      // If it's a single object, count is 1, otherwise it's the array length
+      count: departmentId ? 1 : result.length,
+      data: result,
     });
   } catch (error) {
     res.status(500).json({
