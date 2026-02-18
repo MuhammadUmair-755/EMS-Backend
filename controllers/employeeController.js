@@ -57,3 +57,26 @@ exports.deleteEmployee = async (req, res) => {
     res.status(400).json({ success: false, message: error.message });
   }
 };
+
+exports.getEmployee = async (req, res) => {
+  try {
+    const { email } = req.query;
+    let employee;
+
+     if (email) {
+      employee = await employeeService.getEmployeeByEmail(email);
+    } else {
+      return res.status(400).json({ success: false, message: "Provide id or email" });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: employee,
+    });
+  } catch (error) {
+    res.status(error.message.includes("not found") ? 404 : 500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

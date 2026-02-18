@@ -7,6 +7,7 @@ const {
   updateEmployee,
   deleteEmployee,
   getEmployeeById,
+  getEmployee,
 } = require("../controllers/employeeController");
 const { getEmployeeHistory } = require("../controllers/employeeLogsController");
 const { protect, adminOnly } = require("../middleware/authMiddleware");
@@ -16,6 +17,7 @@ router
   .route("/")
   .post(protect, adminOnly, createEmployee)
   .get(protect, adminOnly,getEmployees);
+  router.route("/email").get(protect, adminOnly,getEmployee);
 router
   .route("/:id")
   .put(protect, adminOnly, updateEmployee)

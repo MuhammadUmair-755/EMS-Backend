@@ -117,6 +117,16 @@ class EmployeeService {
     return employee;
   }
 
+  async getEmployeeByEmail(email) {
+  const employee = await prisma.employee.findUnique({
+    where: { email },
+    include: { department: true }, 
+  });
+  
+  if (!employee) throw new Error("Employee not found with this email");
+  return employee;
+}
+
   async updateEmployee(id, updateData, adminId) {
     const oldData = await this.getEmployeeById(id);
     validateEmployeeDates(updateData.dob);
