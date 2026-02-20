@@ -60,13 +60,13 @@ exports.deleteEmployee = async (req, res) => {
 
 exports.getEmployee = async (req, res) => {
   try {
-    const { email } = req.query;
+    const { code } = req.query;
     let employee;
 
-     if (email) {
-      employee = await employeeService.getEmployeeByEmail(email);
+     if (code) {
+      employee = await employeeService.getEmployeeByCode(code);
     } else {
-      return res.status(400).json({ success: false, message: "Provide id or email" });
+      return res.status(400).json({ success: false, message: "Employee does not exit with this code.." });
     }
 
     res.status(200).json({

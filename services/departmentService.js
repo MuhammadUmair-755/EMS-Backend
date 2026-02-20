@@ -45,6 +45,7 @@ class DepartmentService {
             select: {
               fullName: true,
               email: true,
+              empCode: true,
             },
           },
         },
@@ -72,6 +73,7 @@ class DepartmentService {
               id: true,
               fullName: true,
               email: true,
+              empCode: true,
             },
           },
         },
@@ -82,7 +84,7 @@ class DepartmentService {
     return await prisma.department.findMany({
       include: {
         _count: { select: { employees: true } },
-        deptHead: { select: { fullName: true } },
+        deptHead: { select: { fullName: true, empCode: true } },
       },
     });
   }
@@ -108,6 +110,7 @@ class DepartmentService {
             select: {
               fullName: true,
               email: true,
+              empCode: true,
             },
           },
         },

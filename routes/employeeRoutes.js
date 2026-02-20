@@ -17,7 +17,7 @@ router
   .route("/")
   .post(protect, adminOnly, createEmployee)
   .get(protect, adminOnly,getEmployees);
-  router.route("/email").get(protect, adminOnly,getEmployee);
+  router.route("/code").get(protect, adminOnly,getEmployee);
 router
   .route("/:id")
   .put(protect, adminOnly, updateEmployee)

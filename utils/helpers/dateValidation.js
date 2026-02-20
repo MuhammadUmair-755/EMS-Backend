@@ -27,6 +27,15 @@ const validateEmployeeDates = (dob) => {
   if (dob && !isNotFutureDate(dob)) {
     throw new Error("Date of Birth cannot be in the future.");
   }
+  const eighteenYearsAgo = new Date();
+  const birthDate = new Date(dob);
+  const today = new Date();
+  eighteenYearsAgo.setFullYear(today.getFullYear()- 18 );
+  eighteenYearsAgo.setHours(0,0,0,0);
+
+  if(birthDate > eighteenYearsAgo){
+    throw new Error("Employee must be at least 18 years old");
+  }
 };
 
 module.exports = { isNotFutureDate, validateEmployeeDates };

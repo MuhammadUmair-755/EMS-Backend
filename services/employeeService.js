@@ -18,7 +18,7 @@ class EmployeeService {
       address,
       emergencyContact,
       notes,
-      joiningDate
+      joiningDate,
     } = employeeData;
     if (
       !fullName ||
@@ -28,7 +28,11 @@ class EmployeeService {
       !password ||
       !dob ||
       !departmentId ||
-      !joiningDate
+      !joiningDate ||
+      !phone ||
+      !address ||
+      !emergencyContact ||
+      !notes
     ) {
       throw new Error("Missing required fields.");
     }
@@ -58,8 +62,36 @@ class EmployeeService {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
     return await prisma.$transaction(async (tx) => {
+      const lastEmployee = await tx.employee.findFirst({
+        orderBy: { empCode: "desc" },
+        select: { empCode: true },
+      });
+      let newEmpCode;
+      let isUnique = false;
+      let attempts = 0;
+
+      while (!isUnique) {
+        if (attempts > 10) {
+          throw new Error(
+            "Could not generate a unique Employee Code. Please try again.",
+          );
+        }
+        const randomNumber = Math.floor(100000 + Math.random() * 900000);
+        newEmpCode = `EMP-${randomNumber}`;
+
+        const existing = await tx.employee.findUnique({
+          where: { empCode: newEmpCode },
+          select: { id: true },
+        });
+
+        if (!existing) {
+          isUnique = true;
+        }
+        attempts++;
+      }
       const employee = await tx.employee.create({
         data: {
+          empCode: newEmpCode,
           fullName,
           email,
           cnic,
@@ -117,15 +149,16 @@ class EmployeeService {
     return employee;
   }
 
-  async getEmployeeByEmail(email) {
-  const employee = await prisma.employee.findUnique({
-    where: { email },
-    include: { department: true }, 
-  });
-  
-  if (!employee) throw new Error("Employee not found with this email");
-  return employee;
-}
+  async getEmployeeByCode(empCode) {
+    const normalizedCode = empCode.toUpperCase();
+    const employee = await prisma.employee.findUnique({
+      where: { empCode: normalizedCode },
+      include: { department: true },
+    });
+
+    if (!employee) throw new Error(`Employee not found with this Code ${normalizedCode}`);
+    return employee;
+  }
 
   async updateEmployee(id, updateData, adminId) {
     const oldData = await this.getEmployeeById(id);
@@ -135,15 +168,23 @@ class EmployeeService {
       data: {
         ...updateData,
         dob: updateData?.dob ? new Date(updateData?.dob) : undefined,
-        joiningDate: updateData?.joiningDate ? new Date(updateData?.joiningDate) : undefined,
+        joiningDate: updateData?.joiningDate
+          ? new Date(updateData?.joiningDate)
+          : undefined,
         currentSalary: updateData?.currentSalary
-          ? updateData?.currentSalary
+          ? parseFloat(updateData.currentSalary)
           : undefined,
       },
     });
 
     const logs = [];
-    const fieldsToLog = ["currentSalary", "departmentId", "jobTitle", "status"];
+    const fieldsToLog = [
+      "currentSalary",
+      "departmentId",
+      "jobTitle",
+      "status",
+      "notes",
+    ];
 
     fieldsToLog.forEach((field) => {
       if (updateData[field] && oldData[field] !== updateData[field]) {
