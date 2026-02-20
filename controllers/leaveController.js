@@ -44,7 +44,7 @@ exports.approveOrRejectLeave = async (req, res) => {
 
 exports.getLeavesByEmployeeId = async (req, res) => {
   try {
-    const leaves = await leaveService.getEmployeeLeaves(req.id);
+    const leaves = await leaveService.getEmployeeLeaves(req.params.id);
     res.status(200).json({ success: true, data: leaves });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

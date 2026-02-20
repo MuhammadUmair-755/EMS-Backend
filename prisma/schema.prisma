@@ -20,6 +20,7 @@ model Department {
 
 model Employee {
   id               String         @id @default(uuid())
+  empCode          String         @unique
   fullName         String
   cnic             String         @unique
   dob              DateTime
@@ -50,7 +51,7 @@ model Leave {
   leaveType  LeaveType
   startDate  DateTime
   endDate    DateTime
-  reason     String?
+  reason     String    
   status     LeaveStatus @default(PENDING)
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
