@@ -4,13 +4,17 @@ class DepartmentService {
   async createDepartment(deptData) {
     const { name, description } = deptData;
 
-    if (!name || !description) {
-      throw new Error("Enter valid department name and description");
+    if (!name || typeof name !== "string") {
+      throw new Error("Enter valid department name");
     }
 
+    if (!description || description.trim() === "") {
+      throw new Error("Enter valid department description");
+    }
+    const normalizedName = name.toUpperCase();
     // 1. Check if department name already exists using findUnique
     const existingDept = await prisma.department.findUnique({
-      where: { name },
+      where: { name: normalizedName },
     });
 
     if (existingDept) {
@@ -20,7 +24,7 @@ class DepartmentService {
     // 2. Create the department
     const department = await prisma.department.create({
       data: {
-        name,
+        name: normalizedName,
         description,
         deptHeadId: null, // Initialized as null
       },
@@ -32,6 +36,29 @@ class DepartmentService {
   async setDepartmentHead(deptId, employeeId) {
     if (!deptId || !employeeId) {
       throw new Error("Enter valid departmentId and employeeId");
+    }
+
+    const employee = await prisma.employee.findUnique({
+      where: { id: employeeId },
+    });
+
+    if (!employee) {
+      throw new Error("Employee does not exist.");
+    }
+
+    const existingHeadship = await prisma.department.findFirst({
+      where: {
+        deptHeadId: employeeId,
+        NOT: {
+          id: deptId, // Allow if they are already the head of THIS department
+        },
+      },
+    });
+
+    if (existingHeadship) {
+      throw new Error(
+        `This employee is already the head of the ${existingHeadship.name} department.`,
+      );
     }
 
     try {
@@ -94,8 +121,35 @@ class DepartmentService {
       throw new Error("Department ID is required for update.");
     }
 
-    // Destructure to ensure we only process the fields we allow
     const { name, description, deptHeadId } = updateData;
+
+    if (deptHeadId) {
+      const employee = await prisma.employee.findUnique({
+        where: { id: deptHeadId },
+        select: { id: true, departmentId: true },
+      });
+
+      if (!employee) {
+        throw new Error("Employee does not exist.");
+      }
+
+      if (employee.departmentId !== deptId) {
+        throw new Error("Cannot set this employee as head; they belong to a different department.");
+      }
+
+      const existingHeadship = await prisma.department.findFirst({
+        where: {
+          deptHeadId: deptHeadId,
+          NOT: { id: deptId },
+        },
+      });
+
+      if (existingHeadship) {
+        throw new Error(
+          `This employee is already the head of the ${existingHeadship.name} department.`,
+        );
+      }
+    }
 
     try {
       const updatedDepartment = await prisma.department.update({
@@ -118,11 +172,9 @@ class DepartmentService {
 
       return updatedDepartment;
     } catch (error) {
-      // P2025 is Prisma's error for "Record to update not found."
       if (error.code === "P2025") {
         throw new Error("Department not found.");
       }
-      // P2003 is a Foreign Key constraint error (e.g., employeeId doesn't exist)
       if (error.code === "P2003") {
         throw new Error(
           "The selected Department Head (Employee ID) does not exist.",

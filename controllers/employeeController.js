@@ -50,8 +50,12 @@ exports.updateEmployee = async (req, res) => {
 };
 
 exports.deleteEmployee = async (req, res) => {
+  const  id  = req.query.id?.trim();
+  if (!id) {
+      return res.status(400).json({ success: false, message: "ID parameter missing in URL" });
+    }
   try {
-    await employeeService.deleteEmployee(req.params.id);
+    await employeeService.deleteEmployee(id, req.user.id);
     res.status(200).json({ success: true, message: "Employee deleted" });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
@@ -63,10 +67,15 @@ exports.getEmployee = async (req, res) => {
     const { code } = req.query;
     let employee;
 
-     if (code) {
+    if (code) {
       employee = await employeeService.getEmployeeByCode(code);
     } else {
-      return res.status(400).json({ success: false, message: "Employee does not exit with this code.." });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Employee does not exit with this code..",
+        });
     }
 
     res.status(200).json({

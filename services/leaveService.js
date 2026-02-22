@@ -7,7 +7,7 @@ class LeaveService {
     const start = new Date(startDate);
     const end = new Date(endDate);
     const today = new Date();
-    today.setHours(23, 59, 59, 999);
+    today.setHours(0, 0, 0, 0);
 
     const employee = await prisma.employee.findUnique({
       where: { id: employeeId },
