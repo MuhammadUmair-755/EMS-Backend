@@ -90,15 +90,14 @@ exports.updateDepartment = async (req, res) => {
     });
     
   } catch (error) {
-    if (error.message === "Department not found.") {
+    if (error.message.includes("not found")) {
       return res.status(404).json({ success: false, message: error.message });
     }
 
-    if (error.message.includes("does not exist") || error.message.includes("already heading")) {
+   if (error.message.includes("head") || error.message.includes("exist")) {
       return res.status(400).json({ success: false, message: error.message });
     }
 
-    // 5. Generic Server Error
     console.error("Update Department Error:", error);
     return res.status(500).json({
       success: false,
