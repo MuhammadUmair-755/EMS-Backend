@@ -12,8 +12,7 @@ class LeaveService {
     const employee = await prisma.employee.findUnique({
       where: { id: employeeId },
     });
-    if(!reason)
-    {
+    if (!reason) {
       throw new Error("Enter valid reason for leave");
     }
     if (!employee) {
@@ -36,7 +35,7 @@ class LeaveService {
         AND: [{ startDate: { lte: end } }, { endDate: { gte: start } }],
       },
     });
-    
+
     if (existingLeave) {
       throw new Error("You already have a leave request for these dates.");
     }
@@ -82,6 +81,13 @@ class LeaveService {
 
   async getAllLeaves() {
     return await prisma.leave.findMany({
+      where: {
+        employee: {
+          status: {
+            not: "TERMINATED",
+          },
+        },
+      },
       include: {
         employee: {
           select: {

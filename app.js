@@ -20,6 +20,7 @@ const corsOptions = {
     "http://localhost:3001",
     "http://localhost:3002",
     "https://uneversible-hypsometrically-hoyt.ngrok-free.dev",
+    "https://ems-frontend-rose-three.vercel.app",
   ],
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   // allowedHeaders: [
