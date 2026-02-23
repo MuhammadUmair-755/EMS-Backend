@@ -40,7 +40,7 @@ app.use("/api/leaves", leaveRoutes);
 app.use("/api/departments", departmentRoutes);
 app.use("/api/calendar", calendarRoutes);
 
-// app.listen(port, () => {
-//   console.log(`Server running at http://localhost:${port}`);
-// });
+app.listen(port, "0.0.0.0", () => {
+  console.log(`Server running on port ${port}`);
+});
 module.exports = app;
