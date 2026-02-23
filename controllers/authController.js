@@ -83,7 +83,7 @@ exports.login = async (req, res) => {
     }
 
     res.json({
-      _id: employee.id,
+      id: employee.id,
       fullName: employee.fullName,
       role: employee.role,
       token: generateToken(employee.id),
