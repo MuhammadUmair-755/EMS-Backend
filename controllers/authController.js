@@ -66,10 +66,12 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
-
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
     // 1. Find User
-    const employee = await prisma.employee.findUnique({
-      where: { email }
+    const employee = await prisma.employee.findFirst({
+      where: { email : email.toLowerCase().trim() }
     });
 
     if (!employee) {
