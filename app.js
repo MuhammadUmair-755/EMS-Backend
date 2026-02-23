@@ -20,7 +20,7 @@ const corsOptions = {
     "http://localhost:3001",
     "http://localhost:3002",
     "https://uneversible-hypsometrically-hoyt.ngrok-free.dev",
-    "https://ems-frontend-rose-three.vercel.app",
+    "https://ems-frontend-rose-three.vercel.app"
   ],
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   // allowedHeaders: [
@@ -40,7 +40,6 @@ app.use("/api/leaves", leaveRoutes);
 app.use("/api/departments", departmentRoutes);
 app.use("/api/calendar", calendarRoutes);
 
-app.listen(port, "0.0.0.0", () => {
-  console.log(`Server running on port ${port}`);
+app.listen(port, () => {
+  console.log(`Server running at http://localhost:${port}`);
 });
-module.exports = app;
