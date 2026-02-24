@@ -97,6 +97,9 @@ exports.updateDepartment = async (req, res) => {
    if (error.message.includes("head") || error.message.includes("exist")) {
       return res.status(400).json({ success: false, message: error.message });
     }
+   if (error.message.includes("Resigned") || error.message.includes("Inactive") ) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
 
     console.error("Update Department Error:", error);
     return res.status(500).json({
