@@ -126,15 +126,22 @@ class DepartmentService {
     if (deptHeadId) {
       const employee = await prisma.employee.findUnique({
         where: { id: deptHeadId },
-        select: { id: true, departmentId: true },
+        select: { id: true, departmentId: true, status: true },
       });
 
       if (!employee) {
         throw new Error("Employee does not exist.");
       }
+      if (employee.status !== "ACTIVE") {
+        throw new Error(
+          "Cannot set a Resigned or Inactive employee as Department Head.",
+        );
+      }
 
       if (employee.departmentId !== deptId) {
-        throw new Error("Cannot set this employee as head; they belong to a different department.");
+        throw new Error(
+          "Cannot set this employee as head; they belong to a different department.",
+        );
       }
 
       const existingHeadship = await prisma.department.findFirst({
