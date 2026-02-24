@@ -34,6 +34,7 @@ async function main() {
       role: 'ADMIN', // Matches your Enum
       status: 'ACTIVE', // Matches your Enum
       departmentId: hrDept.id, // Linking to HR department
+      empCode: 'EMP-1001'
     },
   });
 
