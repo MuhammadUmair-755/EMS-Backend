@@ -88,13 +88,11 @@ class DepartmentService {
   }
 
   async getAllDepartments(departmentId = null) {
-    // If an ID is provided, fetch just one
     if (departmentId) {
       return await prisma.department.findUnique({
         where: { id: departmentId },
         include: {
           _count: { select: { employees: true } },
-          // deptHead: { select: { fullName: true } }
           deptHead: {
             select: {
               id: true,
@@ -107,7 +105,6 @@ class DepartmentService {
       });
     }
 
-    // Otherwise, fetch all (your existing logic)
     return await prisma.department.findMany({
       include: {
         _count: { select: { employees: true } },
