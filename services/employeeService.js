@@ -136,16 +136,15 @@ class EmployeeService {
       });
     } catch (error) {
       if (error.code === "P2002") {
-    // Safely access target, fallback to a generic string if undefined
-    const targets = error.meta?.target;
-    const fieldName = Array.isArray(targets) 
-      ? targets.join(" or ") 
-      : "Email or CNIC";
+        const targets = error.meta?.target;
+        const fieldName = Array.isArray(targets)
+          ? targets.join(" or ")
+          : "Email or CNIC";
 
-    throw new Error(
-      `An employee with this ${fieldName} already exists, possibly as a terminated record.`
-    );
-  }
+        throw new Error(
+          `An employee with this ${fieldName} already exists, possibly as a terminated record.`,
+        );
+      }
       throw error;
     }
   }
@@ -165,7 +164,9 @@ class EmployeeService {
       where: { id },
       include: { department: true },
     });
+
     if (!employee) throw new Error("Employee not found");
+
     return employee;
   }
 
@@ -178,12 +179,25 @@ class EmployeeService {
 
     if (!employee)
       throw new Error(`Employee not found with this Code ${normalizedCode}`);
+
     return employee;
   }
 
   async updateEmployee(id, updateData, adminId) {
     const oldData = await this.getEmployeeById(id);
     validateEmployeeDates(updateData.dob);
+    if (updateData?.status === "RESIGNED") {
+      const headOfDepartment = await prisma.department.findFirst({
+    where: { deptHeadId: id },
+    select: { name: true }
+  });
+
+  if (headOfDepartment) {
+    throw new Error(
+      `This employee is the Head of the ${headOfDepartment.name} department. Please assign a new head before marking them as Resigned.`
+    );
+  }
+    }
     const updatedEmployee = await prisma.employee.update({
       where: { id },
       data: {
