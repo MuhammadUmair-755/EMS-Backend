@@ -1,0 +1,34 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16
+    container_name: ems_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: emsdb
+      POSTGRES_USER: emsdb
+      POSTGRES_PASSWORD: MyStrongPassword
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  backend:
+    build: .
+    container_name: ems_backend
+    restart: unless-stopped
+    depends_on:
+      - db
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: production
+      # IMPORTANT: use db as host (service name), NOT localhost
+      DATABASE_URL: postgresql://emsdb:MyStrongPassword@db:5432/emsdb
+      # add your other envs
+      JWT_SECRET: MySuperSecretKey123456!@#
+    # optional: if you want live reload in dev, tell me and I’ll add volumes + nodemon
+
+volumes:
+  pgdata:

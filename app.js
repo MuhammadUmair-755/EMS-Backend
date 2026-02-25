@@ -9,7 +9,7 @@ const calendarRoutes = require("./routes/calendarRoutes");
 const cors = require("cors");
 
 const app = express();
-const port = process.env.PORT || 3001;
+const port = process.env.PORT || 5000;
 
 // connectDB();
 app.use(express.json());
@@ -19,9 +19,10 @@ const corsOptions = {
     "http://localhost:3000",
     "http://localhost:3001",
     "http://localhost:3002",
+    "https://unharried-michelle-tasteless.ngrok-free.dev",
     "https://uneversible-hypsometrically-hoyt.ngrok-free.dev",
-    "https://ems-frontend-rose-three.vercel.app",
-    "https://ems-frontend-git-main-umairs-projects-37b16fc3.vercel.app"
+    // "https://ems-frontend-rose-three.vercel.app",
+    // "https://ems-frontend-git-main-umairs-projects-37b16fc3.vercel.app",
   ],
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   // allowedHeaders: [
