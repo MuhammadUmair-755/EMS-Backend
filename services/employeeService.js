@@ -127,7 +127,7 @@ class EmployeeService {
           data: {
             employeeId: employee.id,
             eventType: "Manual_Note", // Matches the Enum in your Prisma schema
-            newValue: "Employee profile created",
+            newValue: notes,
             adminUserId: adminId,
           },
         });
